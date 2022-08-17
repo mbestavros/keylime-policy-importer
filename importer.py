@@ -1,6 +1,4 @@
-import copy
-import datetime
-import json
+import copy, datetime, getopt, json, sys
 from in_toto.models import metadata
 
 # hardcoded constants - should eventually be referenced from Keylime
@@ -69,9 +67,29 @@ def convert_link(link_path, policy=None):
 
     return policy
 
-if __name__ == "__main__":
-    link_path = "artifacts/example-link.link"
-    policy = convert_link(link_path, policy=convert_legacy_allowlist("artifacts/allowlist.txt"))
+def main(argv):
+    link_path = None
+    allowlist = None
+    try:
+        opts, args = getopt.getopt(argv,"hl:a:",["linkfile=","allowlistfile="])
+    except getopt.GetoptError:
+        print('importer.py -l <inputfile> -a <outputfile>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print("test.py -l <linkfile> -a <allowlistfile>")
+            sys.exit()
+        elif opt in ("-l", "--linkfile"):
+            link_path = arg
+        elif opt in ("-a", "--allowlistfile"):
+            allowlist = arg
+
+    if allowlist:
+        allowlist = convert_legacy_allowlist(allowlist)
+    policy = convert_link(link_path, allowlist)
     print(json.dumps(policy))
     with open("keylime-policy.txt", "w") as f:
         f.write(json.dumps(policy))
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
