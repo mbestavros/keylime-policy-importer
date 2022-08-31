@@ -1,5 +1,8 @@
 import copy, datetime, json, re
+from os.path import exists
 from .constants import constants
+from . import signing
+
 
 # Creates an IMA policy from provided legacy allow and exclude lists.
 def create_ima_policy(allowlist_path, excludelist_path, keypath):
@@ -38,6 +41,14 @@ def create_ima_policy(allowlist_path, excludelist_path, keypath):
     ima_policy["excludes"] = excl_list
     ima_policy["keyrings"] = alist_json["keyrings"]
     ima_policy["ima"] = alist_json["ima"]
+
+    if keypath:
+        attached_sig = signing.sign(ima_policy, keypath)
+
+        ima_policy_signed = copy.deepcopy(constants.EMPTY_SIGNED_IMA_POLICY)
+        ima_policy_signed["signatures"].append(attached_sig)
+        ima_policy_signed["signed"] = ima_policy
+        ima_policy = ima_policy_signed
 
     return ima_policy
 
