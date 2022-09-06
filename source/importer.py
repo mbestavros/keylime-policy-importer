@@ -1,5 +1,4 @@
 import copy, datetime, json, re
-from os.path import exists
 from .constants import constants
 from . import signing
 
