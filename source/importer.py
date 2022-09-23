@@ -4,7 +4,7 @@ from . import signing
 
 
 # Creates an IMA policy from provided legacy allow and exclude lists.
-def create_ima_policy(allowlist_path, excludelist_path, keypath):
+def create_ima_policy(allowlist_path, excludelist_path, verification_keys, keypath):
     with open(allowlist_path, "r") as f:
         alist_raw = f.read()
 
@@ -27,12 +27,23 @@ def create_ima_policy(allowlist_path, excludelist_path, keypath):
         alist_json = convert_legacy_allowlist(alist_raw)
 
     excl_list = []
-    with open(excludelist_path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("#") or len(line) == 0:
-                continue
-            excl_list.append(line)
+    if excludelist_path:
+        with open(excludelist_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("#") or len(line) == 0:
+                    continue
+                excl_list.append(line)
+
+    verification_key_list = None
+    if verification_keys:
+        keyring = signing.ImaKeyring()
+        for key in verification_keys:
+            pubkey, keyidv2 = signing.get_pubkey_from_file(key)
+            if not pubkey:
+                print(f"File '{key}' is not a file with a key")
+            keyring.add_pubkey(pubkey, keyidv2)
+        verification_key_list = json.dumps(keyring.to_string())
 
     ima_policy = copy.deepcopy(constants.EMPTY_IMA_POLICY)
 
@@ -40,6 +51,7 @@ def create_ima_policy(allowlist_path, excludelist_path, keypath):
     ima_policy["excludes"] = excl_list
     ima_policy["keyrings"] = alist_json["keyrings"]
     ima_policy["ima"] = alist_json["ima"]
+    ima_policy["verification_keys"] = verification_key_list
 
     if keypath:
         attached_sig = signing.sign(ima_policy, keypath)

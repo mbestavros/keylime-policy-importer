@@ -131,3 +131,4 @@ dmypy.json
 # Project-specific
 keylime-policy.txt
 keylime-policy.json
+keylime-ima-policy.json
